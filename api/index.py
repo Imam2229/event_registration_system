@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from pymongo import MongoClient
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
@@ -7,8 +8,18 @@ app = Flask(__name__)
 client = MongoClient("mongodb+srv://shahnawazimam53_db_user:Imam1234@cluster0.ccc3bdn.mongodb.net/?retryWrites=true&w=majority")
 
 # Database and collection
-db = client["event_registration_db"]   # Atlas me yeh DB ban jayega
-registrations = db["registrations"]    # Collection ka naam
+db = client["event_registration_db"]
+registrations = db["registrations"]
+
+# ---------------- SMTP Email Setup ----------------
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = "shahbazimam0111@gmail.com"      # Apna Gmail
+app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"               # App password
+app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
+
+mail = Mail(app)
 
 # ---------------- Routes ----------------
 @app.route("/")
@@ -31,11 +42,34 @@ def register():
         }
 
         try:
+            # --- Save to MongoDB ---
             registrations.insert_one(data)
-            return render_template("registration.html", success=True, message="✅ Registration Successful!")
+
+            # --- Send confirmation email ---
+            msg = Message(
+                subject=f"Registration Successful for {data['event_name']}",
+                recipients=[data['email']]
+            )
+            msg.body = f"""
+Hello {data['user_name']},
+
+Your registration for the event "{data['event_name']}" is successful.
+
+Event Details:
+Organizers: {data['organizers']}
+Date & Time: {data['event_date']} at {data['event_time']}
+Participants: {data['participants']}
+Address: {data['event_address']}
+Ticket Price: {data['ticket_price']}
+
+Thank you for registering!
+"""
+            mail.send(msg)
+
+            return render_template("registration.html", success=True, message="✅ Registration Successful! Email sent.")
         except Exception as e:
             return render_template("registration.html", success=False, message=f"❌ Registration Failed: {str(e)}")
-    
+
     return render_template("registration.html")
 
 @app.route("/admin")
