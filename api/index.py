@@ -77,6 +77,15 @@ def admin():
     all_registrations = list(registrations.find())
     return render_template("admin.html", registrations=all_registrations)
 
+# 🔹 New Route for Event List
+@app.route("/eventList")
+def event_list():
+    try:
+        all_events = list(registrations.find())
+        return render_template("eventList.html", events=all_events)
+    except Exception as e:
+        return f"Error loading events: {str(e)}"
+
 # ---------------- Run Flask ----------------
 if __name__ == "__main__":
     app.run(debug=True)

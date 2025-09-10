@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #377974, #377974);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #f0f9f8;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #377974;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        table th {
+            background: #377974;
+            color: #fff;
+        }
+        table tr:nth-child(even) {
+            background: #e8f6f5;
+        }
+        table tr:hover {
+            background: #d1ece9;
+        }
+        .btn {
+            padding: 8px 15px;
+            background: #377974;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .btn:hover {
+            background: #28594f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Registered Events</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Event Name</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Address</th>
+                    <th>Tickets</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.event_name }}</td>
+                    <td>{{ event.event_date }}</td>
+                    <td>{{ event.event_time }}</td>
+                    <td>{{ event.event_address }}</td>
+                    <td>{{ event.participants }}</td>
+                    <td>₹{{ event.ticket_price }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">No events registered yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Ticket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #214a47, #214a47);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .ticket-container {
+            background: #c3cdb0; /* light greenish tint */
+            color: #333;
+            margin: 20px;
+            padding: 30px;
+            max-width: 500px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            text-align: left;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #377974;
+        }
+        p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        strong {
+            color: #377974;
+        }
+        .share-link {
+            margin-top: 25px;
+            padding: 12px;
+            background: #377974;
+            border-radius: 8px;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .share-link a {
+            color: #d6dee1;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .share-link:hover {
+            background: #28594f;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket-container">
+        <h1>🎟️ Ticket Details</h1>
+        <p><strong>Ticket Number:</strong> {{ ticket._id }}</p>
+        <p><strong>Event:</strong> {{ ticket.event_name }}</p>
+        <p><strong>Date:</strong> {{ ticket.event_date }}</p>
+        <p><strong>Time:</strong> {{ ticket.event_time }}</p>
+        <p><strong>Address:</strong> {{ ticket.event_address }}</p>
+        <p><strong>Price:</strong> ₹{{ ticket.ticket_price }}</p>
+
+        <div class="share-link">
+            🔗 <a href="{{ url_for('ticket', ticket_id=ticket._id) }}">
+                {{ request.host_url }}ticket/{{ ticket._id }}
+            </a>
+        </div>
+    </div>
+</body>
+</html>
