@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Event Ticket</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .ticket {
+            border: 2px dashed #333;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        h2 { text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>{{ event.event_name }} - Tickets</h2>
+    {% for t in tickets %}
+    <div class="ticket">
+        <p><strong>Ticket No:</strong> {{ t.ticket_number }}</p>
+        <p><strong>Event:</strong> {{ t.event }}</p>
+        <p><strong>Date:</strong> {{ t.date }}</p>
+        <p><strong>Time:</strong> {{ t.time }}</p>
+        <p><strong>Address:</strong> {{ t.address }}</p>
+        <p><strong>Organiser:</strong> {{ t.organizers }}</p>
+        <p><strong>Type of Ticket:</strong> {{ t.event_type }}</p>
+        <p><strong>Price:</strong> ₹{{ t.price }}</p>
+        <p><strong>Participant:</strong> {{ t.participant_no }}</p>
+    </div>
+    {% endfor %}
+</body>
+</html>

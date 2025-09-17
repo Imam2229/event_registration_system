@@ -1,93 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event List</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #377974, #377974);
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #f0f9f8;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #377974;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        table th, table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: center;
-        }
-        table th {
-            background: #377974;
-            color: #fff;
-        }
-        table tr:nth-child(even) {
-            background: #e8f6f5;
-        }
-        table tr:hover {
-            background: #d1ece9;
-        }
-        .btn {
-            padding: 8px 15px;
-            background: #377974;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 6px;
-        }
-        .btn:hover {
-            background: #28594f;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event List - Event Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #377974, #28594f);
+      color: #333;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #f0f9f8;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      overflow-x: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #377974;
+      font-size: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px 10px;
+      text-align: center;
+      font-size: 15px;
+    }
+    table th {
+      background: #377974;
+      color: #fff;
+      font-weight: 600;
+    }
+    table tr:nth-child(even) {
+      background: #e8f6f5;
+    }
+    table tr:hover {
+      background: #d1ece9;
+    }
+    .btn {
+      display: inline-block;
+      padding: 8px 15px;
+      background: #377974;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background: #28594f;
+    }
+    td.no-events {
+      text-align: center;
+      font-weight: 600;
+      padding: 20px 0;
+      color: #374151;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 { font-size: 26px; }
+      table th, table td { font-size: 13px; padding: 10px 8px; }
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 22px; }
+      table { min-width: 100%; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📋 Registered Events</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Event Name</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Address</th>
-                    <th>Tickets</th>
-                    <th>Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in events %}
-                <tr>
-                    <td>{{ event.event_name }}</td>
-                    <td>{{ event.event_date }}</td>
-                    <td>{{ event.event_time }}</td>
-                    <td>{{ event.event_address }}</td>
-                    <td>{{ event.participants }}</td>
-                    <td>₹{{ event.ticket_price }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6">No events registered yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  <div class="container">
+    <h1>📋 Registered Events</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Event Name</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Address</th>
+          <th>Tickets</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if events %}
+          {% for event in events %}
+          <tr>
+            <td>{{ event.event_name }}</td>
+            <td>{{ event.event_date }}</td>
+            <td>{{ event.event_time }}</td>
+            <td>{{ event.event_address }}</td>
+            <td>{{ event.participants }}</td>
+            <td>₹{{ event.ticket_price }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="no-events">No events registered yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>

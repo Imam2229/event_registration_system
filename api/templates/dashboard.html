@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Event Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #2b4f4c, #377974);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .card {
+      background: #fff;
+      color: #377974;
+      padding: 30px 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+    }
+    .card h2 {
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+    .card p {
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .card a {
+      display: inline-block;
+      text-decoration: none;
+      background: #377974;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .card a:hover {
+      background: #285c57;
+      transform: scale(1.05);
+    }
+    .logout-btn {
+      margin-top: 30px;
+      text-decoration: none;
+      color: #fff;
+      background: #b91c1c;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    .logout-btn:hover { background: #7f1414; }
+    footer {
+      margin-top: 50px;
+      text-align: center;
+      color: #fff;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome, {{ name }}!</h1>
+
+  <div class="cards">
+    <div class="card">
+      <h2>🎉 Register New Event</h2>
+      <p>Create a new event and add participants with ease.</p>
+      <a href="/register">Register Event</a>
+    </div>
+    <div class="card">
+      <h2>📋 Your Registered Events</h2>
+      <p>View all events you have registered in the past.</p>
+      <a href="/my_events">View Events</a>
+    </div>
+  </div>
+
+  <a href="/logout" class="logout-btn">Logout</a>
+
+  <footer>
+    &copy; 2025 Event Portal • Developed by Shahnawaz Imam
+  </footer>
+</body>
+</html>

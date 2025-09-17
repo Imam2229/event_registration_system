@@ -35,7 +35,6 @@
     button:hover { background:#2c5d72; transform:translateY(-2px); }
     @media (max-width:520px) { .container { padding:20px; } h2 { font-size:24px; } }
 
-    /* Success/Failure message */
     .message {
       padding:12px; margin-bottom:20px; border-radius:8px; font-weight:bold; text-align:center;
     }
@@ -61,7 +60,7 @@
       </div>
       <div class="form-group">
         <label>Your Name:</label>
-        <input type="text" name="user_name" required>
+        <input type="text" name="user_name" value="{{ session['user_name'] }}" readonly required>
       </div>
       <div class="form-group">
         <label>Organizers:</label>
@@ -69,7 +68,7 @@
       </div>
       <div class="form-group">
         <label>Email:</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" value="{{ session['user_email'] }}" readonly required>
       </div>
       <div class="form-group">
         <label>Event Date:</label>

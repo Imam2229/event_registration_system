@@ -1,77 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Ticket</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #214a47, #214a47);
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .ticket-container {
-            background: #c3cdb0; /* light greenish tint */
-            color: #333;
-            margin: 20px;
-            padding: 30px;
-            max-width: 500px;
-            border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            text-align: left;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 28px;
-            color: #377974;
-        }
-        p {
-            font-size: 16px;
-            margin: 10px 0;
-        }
-        strong {
-            color: #377974;
-        }
-        .share-link {
-            margin-top: 25px;
-            padding: 12px;
-            background: #377974;
-            border-radius: 8px;
-            display: inline-block;
-            transition: background 0.3s;
-        }
-        .share-link a {
-            color: #d6dee1;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .share-link:hover {
-            background: #28594f;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Tickets - {{ event.event_name }}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .ticket {
+      width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .details {
+      margin: 20px 0;
+    }
+    .details p {
+      font-size: 16px;
+      margin: 8px 0;
+    }
+    .download-btn {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .download-btn a {
+      text-decoration: none;
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .download-btn a:hover {
+      background: #0056b3;
+    }
+  </style>
 </head>
 <body>
-    <div class="ticket-container">
-        <h1>🎟️ Ticket Details</h1>
-        <p><strong>Ticket Number:</strong> {{ ticket._id }}</p>
-        <p><strong>Event:</strong> {{ ticket.event_name }}</p>
-        <p><strong>Date:</strong> {{ ticket.event_date }}</p>
-        <p><strong>Time:</strong> {{ ticket.event_time }}</p>
-        <p><strong>Address:</strong> {{ ticket.event_address }}</p>
-        <p><strong>Price:</strong> ₹{{ ticket.ticket_price }}</p>
+  <h2>{{ event.event_name }} - Tickets</h2>
 
-        <div class="share-link">
-            🔗 <a href="{{ url_for('ticket', ticket_id=ticket._id) }}">
-                {{ request.host_url }}ticket/{{ ticket._id }}
-            </a>
-        </div>
+  {% for t in tickets %}
+  <div class="ticket">
+    <div class="details">
+      <p><strong>Ticket No:</strong> {{ t.ticket_number }}</p>
+      <p><strong>Event:</strong> {{ t.event }}</p>
+      <p><strong>Date:</strong> {{ t.date }}</p>
+      <p><strong>Time:</strong> {{ t.time }}</p>
+      <p><strong>Address:</strong> {{ t.address }}</p>
+      <p><strong>Organiser:</strong> {{ t.organizers }}</p>
+      <p><strong>Type of Ticket:</strong> {{ t.event }}</p>
+      <p><strong>Price:</strong> ₹{{ t.price }}</p>
+      <p><strong>Participant:</strong> {{ t.participant_no }}</p>
     </div>
+  </div>
+  {% endfor %}
+
+  <div class="download-btn">
+    <a href="/download_ticket/{{ event._id }}">⬇️ Download All Tickets (PDF)</a>
+  </div>
 </body>
 </html>
