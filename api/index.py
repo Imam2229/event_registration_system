@@ -24,7 +24,7 @@ app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USERNAME"] = "shahbazimam0111@gmail.com"
-app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"
+app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"  # App password
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 mail = Mail(app)
 
@@ -166,12 +166,8 @@ def ticket(ticket_id):
         if not event:
             return "❌ Ticket not found!"
 
-        participants = int(event.get("participants", 0))
-        if participants <= 0:
-            return "❌ No participants to generate tickets for!"
-
         tickets = []
-        for i in range(1, participants + 1):
+        for i in range(1, int(event["participants"]) + 1):
             tickets.append({
                 "ticket_number": f"{ticket_id}-{i:03d}",
                 "event": event["event_name"],
@@ -197,12 +193,8 @@ def download_ticket(ticket_id):
         if not event:
             return "❌ Ticket not found!"
 
-        participants = int(event.get("participants", 0))
-        if participants <= 0:
-            return "❌ No participants to generate tickets for!"
-
         tickets = []
-        for i in range(1, participants + 1):
+        for i in range(1, int(event["participants"]) + 1):
             tickets.append({
                 "ticket_number": f"{ticket_id}-{i:03d}",
                 "event": event["event_name"],
@@ -215,8 +207,8 @@ def download_ticket(ticket_id):
                 "participant_no": i
             })
 
-        # PDF Generation
-        pdf = FPDF()
+        # Create PDF
+        pdf = FPDF(format='A4')
         pdf.set_auto_page_break(auto=True, margin=15)
         font_path = os.path.join(os.path.dirname(__file__), "dejavu-sans", "DejaVuSans.ttf")
         pdf.add_font("DejaVu", "", font_path, uni=True)
@@ -224,7 +216,9 @@ def download_ticket(ticket_id):
 
         for t in tickets:
             pdf.add_page()
-            pdf.cell(0, 10, f"Ticket Number: {t['ticket_number']}", ln=True)
+            pdf.set_text_color(0, 0, 128)
+            pdf.cell(0, 10, f"🎟 Ticket Number: {t['ticket_number']}", ln=True)
+            pdf.set_text_color(0, 0, 0)
             pdf.cell(0, 10, f"Event: {t['event']}", ln=True)
             pdf.cell(0, 10, f"Organizers: {t['organizers']}", ln=True)
             pdf.cell(0, 10, f"Type: {t['event_type']}", ln=True)
@@ -234,18 +228,21 @@ def download_ticket(ticket_id):
             pdf.cell(0, 10, f"Price: ₹{t['price']}", ln=True)
             pdf.cell(0, 10, f"Participant No: {t['participant_no']}", ln=True)
 
-            # Add QR code
-            qr = qrcode.QRCode(box_size=3, border=1)
-            qr.add_data(t['ticket_number'])
+            # Generate QR code for ticket
+            qr_data = f"Ticket: {t['ticket_number']}\nEvent: {t['event']}\nParticipant: {t['participant_no']}"
+            qr = qrcode.QRCode(box_size=2, border=1)
+            qr.add_data(qr_data)
             qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            qr_path = os.path.join(os.path.dirname(__file__), f"qr_{t['ticket_number']}.png")
-            img.save(qr_path)
-            pdf.image(qr_path, x=160, y=10, w=30, h=30)
-            os.remove(qr_path)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            qr_path = BytesIO()
+            qr_img.save(qr_path, format="PNG")
+            qr_path.seek(0)
+            pdf.image(qr_path, x=160, y=10, w=40, h=40)
 
-        pdf_bytes = pdf.output(dest='S').encode('latin1')
-        pdf_io = BytesIO(pdf_bytes)
+        # Convert PDF to BytesIO
+        pdf_io = BytesIO()
+        pdf.output(pdf_io)
+        pdf_io.seek(0)
 
         return send_file(
             pdf_io,
