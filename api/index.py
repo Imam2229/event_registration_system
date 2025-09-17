@@ -5,8 +5,8 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from fpdf import FPDF
 from io import BytesIO
-import os
 import qrcode
+import os
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
@@ -208,7 +208,7 @@ def download_ticket(ticket_id):
             })
 
         # Create PDF
-        pdf = FPDF(format='A4')
+        pdf = FPDF('P', 'mm', 'A4')
         pdf.set_auto_page_break(auto=True, margin=15)
         font_path = os.path.join(os.path.dirname(__file__), "dejavu-sans", "DejaVuSans.ttf")
         pdf.add_font("DejaVu", "", font_path, uni=True)
@@ -216,9 +216,7 @@ def download_ticket(ticket_id):
 
         for t in tickets:
             pdf.add_page()
-            pdf.set_text_color(0, 0, 128)
-            pdf.cell(0, 10, f"🎟 Ticket Number: {t['ticket_number']}", ln=True)
-            pdf.set_text_color(0, 0, 0)
+            pdf.cell(0, 10, f"Ticket Number: {t['ticket_number']}", ln=True)
             pdf.cell(0, 10, f"Event: {t['event']}", ln=True)
             pdf.cell(0, 10, f"Organizers: {t['organizers']}", ln=True)
             pdf.cell(0, 10, f"Type: {t['event_type']}", ln=True)
@@ -228,20 +226,19 @@ def download_ticket(ticket_id):
             pdf.cell(0, 10, f"Price: ₹{t['price']}", ln=True)
             pdf.cell(0, 10, f"Participant No: {t['participant_no']}", ln=True)
 
-            # Generate QR code for ticket
-            qr_data = f"Ticket: {t['ticket_number']}\nEvent: {t['event']}\nParticipant: {t['participant_no']}"
+            # Add QR code
             qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data(qr_data)
+            qr.add_data(f"{t['ticket_number']} | {t['event']} | {t['participant_no']}")
             qr.make(fit=True)
             qr_img = qr.make_image(fill_color="black", back_color="white")
-            qr_path = BytesIO()
-            qr_img.save(qr_path, format="PNG")
-            qr_path.seek(0)
-            pdf.image(qr_path, x=160, y=10, w=40, h=40)
+            qr_path = os.path.join(os.path.dirname(__file__), f"{t['ticket_number']}.png")
+            qr_img.save(qr_path)
+            pdf.image(qr_path, x=160, y=10, w=30)
+            os.remove(qr_path)  # remove temporary QR file
 
         # Convert PDF to BytesIO
-        pdf_io = BytesIO()
-        pdf.output(pdf_io)
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        pdf_io = BytesIO(pdf_bytes)
         pdf_io.seek(0)
 
         return send_file(
