@@ -3,9 +3,10 @@ from pymongo import MongoClient
 from flask_mail import Mail, Message
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
-import pdfkit
+from fpdf import FPDF
+from io import BytesIO
 import os
-import tempfile
+import qrcode
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
@@ -25,12 +26,7 @@ app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USERNAME"] = "shahbazimam0111@gmail.com"
 app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
-
 mail = Mail(app)
-
-# ---------------- PDFKIT Configuration ----------------
-path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-pdf_config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
 
 # ---------------- Routes ----------------
 @app.route("/")
@@ -170,8 +166,12 @@ def ticket(ticket_id):
         if not event:
             return "❌ Ticket not found!"
 
+        participants = int(event.get("participants", 0))
+        if participants <= 0:
+            return "❌ No participants to generate tickets for!"
+
         tickets = []
-        for i in range(1, int(event["participants"]) + 1):
+        for i in range(1, participants + 1):
             tickets.append({
                 "ticket_number": f"{ticket_id}-{i:03d}",
                 "event": event["event_name"],
@@ -189,17 +189,20 @@ def ticket(ticket_id):
     except Exception as e:
         return f"⚠️ Error loading ticket: {str(e)}"
 
-# ---------------- Download All Tickets as PDF ----------------
+# ---------------- Download Tickets as PDF with QR ----------------
 @app.route("/download_ticket/<ticket_id>")
 def download_ticket(ticket_id):
-    tmp_file_path = None
     try:
         event = registrations.find_one({"_id": ObjectId(ticket_id)})
         if not event:
             return "❌ Ticket not found!"
 
+        participants = int(event.get("participants", 0))
+        if participants <= 0:
+            return "❌ No participants to generate tickets for!"
+
         tickets = []
-        for i in range(1, int(event["participants"]) + 1):
+        for i in range(1, participants + 1):
             tickets.append({
                 "ticket_number": f"{ticket_id}-{i:03d}",
                 "event": event["event_name"],
@@ -212,23 +215,47 @@ def download_ticket(ticket_id):
                 "participant_no": i
             })
 
-        html = render_template("ticket_download.html", event=event, tickets=tickets)
+        # PDF Generation
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        font_path = os.path.join(os.path.dirname(__file__), "dejavu-sans", "DejaVuSans.ttf")
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", "", 14)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            pdfkit.from_string(html, tmp_file.name, configuration=pdf_config, options={"enable-local-file-access": ""})
-            tmp_file_path = tmp_file.name
+        for t in tickets:
+            pdf.add_page()
+            pdf.cell(0, 10, f"Ticket Number: {t['ticket_number']}", ln=True)
+            pdf.cell(0, 10, f"Event: {t['event']}", ln=True)
+            pdf.cell(0, 10, f"Organizers: {t['organizers']}", ln=True)
+            pdf.cell(0, 10, f"Type: {t['event_type']}", ln=True)
+            pdf.cell(0, 10, f"Date: {t['date']}", ln=True)
+            pdf.cell(0, 10, f"Time: {t['time']}", ln=True)
+            pdf.cell(0, 10, f"Address: {t['address']}", ln=True)
+            pdf.cell(0, 10, f"Price: ₹{t['price']}", ln=True)
+            pdf.cell(0, 10, f"Participant No: {t['participant_no']}", ln=True)
 
-        return send_file(tmp_file_path, as_attachment=True, download_name=f"tickets_{ticket_id}.pdf")
+            # Add QR code
+            qr = qrcode.QRCode(box_size=3, border=1)
+            qr.add_data(t['ticket_number'])
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            qr_path = os.path.join(os.path.dirname(__file__), f"qr_{t['ticket_number']}.png")
+            img.save(qr_path)
+            pdf.image(qr_path, x=160, y=10, w=30, h=30)
+            os.remove(qr_path)
+
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
+        pdf_io = BytesIO(pdf_bytes)
+
+        return send_file(
+            pdf_io,
+            as_attachment=True,
+            download_name=f"tickets_{ticket_id}.pdf",
+            mimetype="application/pdf"
+        )
 
     except Exception as e:
         return f"⚠️ Error generating PDF: {str(e)}"
-
-    finally:
-        try:
-            if tmp_file_path and os.path.exists(tmp_file_path):
-                os.remove(tmp_file_path)
-        except:
-            pass
 
 # ---------------- Admin (All Events) ----------------
 @app.route("/admin")

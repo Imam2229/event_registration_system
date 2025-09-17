@@ -1,75 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Tickets - {{ event.event_name }}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
-    .ticket {
-      width: 600px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
-      margin-bottom: 20px;
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-    .details {
-      margin: 20px 0;
-    }
-    .details p {
-      font-size: 16px;
-      margin: 8px 0;
-    }
-    .download-btn {
-      display: block;
-      text-align: center;
-      margin-top: 20px;
-    }
-    .download-btn a {
-      text-decoration: none;
-      background: #007bff;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      font-weight: bold;
-    }
-    .download-btn a:hover {
-      background: #0056b3;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ event.event_name }} - Tickets</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Poppins', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+  .ticket-container { max-width: 700px; margin: auto; }
+  .ticket {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    padding: 25px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    border-left: 5px solid #377974;
+  }
+  h2 { text-align: center; color: #377974; margin-bottom: 20px; }
+  .ticket p { margin: 6px 0; font-size: 15px; color: #333; }
+  .qr { position: absolute; top: 20px; right: 20px; width: 80px; height: 80px; border: 1px solid #ccc; padding: 3px; background: #fff; }
+</style>
 </head>
 <body>
-  <h2>{{ event.event_name }} - Tickets</h2>
-
-  {% for t in tickets %}
-  <div class="ticket">
-    <div class="details">
-      <p><strong>Ticket No:</strong> {{ t.ticket_number }}</p>
+  <div class="ticket-container">
+    <h2>{{ event.event_name }} - Tickets</h2>
+    {% for t in tickets %}
+    <div class="ticket">
+      <p><strong>Ticket Number:</strong> {{ t.ticket_number }}</p>
       <p><strong>Event:</strong> {{ t.event }}</p>
+      <p><strong>Organizers:</strong> {{ t.organizers }}</p>
+      <p><strong>Type:</strong> {{ t.event_type }}</p>
       <p><strong>Date:</strong> {{ t.date }}</p>
       <p><strong>Time:</strong> {{ t.time }}</p>
       <p><strong>Address:</strong> {{ t.address }}</p>
-      <p><strong>Organiser:</strong> {{ t.organizers }}</p>
-      <p><strong>Type of Ticket:</strong> {{ t.event }}</p>
       <p><strong>Price:</strong> ₹{{ t.price }}</p>
-      <p><strong>Participant:</strong> {{ t.participant_no }}</p>
+      <p><strong>Participant No:</strong> {{ t.participant_no }}</p>
+      <div class="qr">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ t.ticket_number }}" alt="QR code">
+      </div>
     </div>
-  </div>
-  {% endfor %}
-
-  <div class="download-btn">
-    <a href="/download_ticket/{{ event._id }}">⬇️ Download All Tickets (PDF)</a>
+    {% endfor %}
+    <div style="text-align:center; margin-top:20px;">
+      <a href="/download_ticket/{{ event._id }}" style="text-decoration:none; background:#377974; color:white; padding:12px 25px; border-radius:8px; font-weight:bold;">⬇️ Download All Tickets (PDF)</a>
+    </div>
   </div>
 </body>
 </html>
