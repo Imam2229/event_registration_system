@@ -12,9 +12,8 @@ app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
 
 # ---------------- MongoDB Setup ----------------
-client = MongoClient(
-    "mongodb+srv://shahnawazimam53_db_user:Imam1234@cluster0.ccc3bdn.mongodb.net/?retryWrites=true&w=majority"
-)
+MONGO_URI = os.environ.get("MONGO_URI", "your-local-or-atlas-uri-here")
+client = MongoClient(MONGO_URI)
 db = client["event_registration_db"]
 users_collection = db["users"]
 registrations = db["registrations"]
@@ -23,8 +22,8 @@ registrations = db["registrations"]
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = "shahbazimam0111@gmail.com"
-app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"  # App password
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")  # from Vercel env
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")  # from Vercel env
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 mail = Mail(app)
 
@@ -33,7 +32,6 @@ mail = Mail(app)
 def home():
     return render_template("index.html")
 
-# ---------------- User Signup ----------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -58,7 +56,6 @@ def signup():
 
     return render_template("signup.html")
 
-# ---------------- User Login ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -76,21 +73,18 @@ def login():
 
     return render_template("login.html")
 
-# ---------------- Dashboard ----------------
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
     return render_template("dashboard.html", user_name=session["user_name"])
 
-# ---------------- Logout ----------------
 @app.route("/logout")
 def logout():
     session.clear()
     flash("✅ You have been logged out.", "info")
     return redirect(url_for("login"))
 
-# ---------------- Event Registration ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register_event():
     if "user_id" not in session:
@@ -115,7 +109,6 @@ def register_event():
             result = registrations.insert_one(data)
             event_id = str(result.inserted_id)
 
-            # Email Confirmation
             try:
                 msg = Message(
                     subject=f"Registration Successful for {data['event_name']}",
@@ -134,7 +127,7 @@ Participants: {data['participants']}
 Address: {data['event_address']}
 Ticket Price: ₹{data['ticket_price']}
 
-You can view and download your tickets here: http://127.0.0.1:5000/ticket/{event_id}
+You can view and download your tickets here: https://{os.environ.get("VERCEL_URL")}/ticket/{event_id}
 
 Thank you for registering!
 """
@@ -149,7 +142,6 @@ Thank you for registering!
 
     return render_template("registration.html")
 
-# ---------------- User's Events ----------------
 @app.route("/my_events")
 def my_events():
     if "user_email" not in session:
@@ -158,7 +150,6 @@ def my_events():
     user_events = list(registrations.find({"user_email": session["user_email"]}))
     return render_template("my_events.html", events=user_events)
 
-# ---------------- Ticket Generation ----------------
 @app.route("/ticket/<ticket_id>")
 def ticket(ticket_id):
     try:
@@ -185,7 +176,6 @@ def ticket(ticket_id):
     except Exception as e:
         return f"⚠️ Error loading ticket: {str(e)}"
 
-# ---------------- Download Tickets as PDF with QR ----------------
 @app.route("/download_ticket/<ticket_id>")
 def download_ticket(ticket_id):
     try:
@@ -207,12 +197,9 @@ def download_ticket(ticket_id):
                 "participant_no": i
             })
 
-        # Create PDF
         pdf = FPDF('P', 'mm', 'A4')
         pdf.set_auto_page_break(auto=True, margin=15)
-        font_path = os.path.join(os.path.dirname(__file__), "dejavu-sans", "DejaVuSans.ttf")
-        pdf.add_font("DejaVu", "", font_path, uni=True)
-        pdf.set_font("DejaVu", "", 14)
+        pdf.set_font("Arial", size=14)
 
         for t in tickets:
             pdf.add_page()
@@ -226,17 +213,15 @@ def download_ticket(ticket_id):
             pdf.cell(0, 10, f"Price: ₹{t['price']}", ln=True)
             pdf.cell(0, 10, f"Participant No: {t['participant_no']}", ln=True)
 
-            # Add QR code
             qr = qrcode.QRCode(box_size=2, border=1)
             qr.add_data(f"{t['ticket_number']} | {t['event']} | {t['participant_no']}")
             qr.make(fit=True)
             qr_img = qr.make_image(fill_color="black", back_color="white")
-            qr_path = os.path.join(os.path.dirname(__file__), f"{t['ticket_number']}.png")
+            qr_path = f"/tmp/{t['ticket_number']}.png"
             qr_img.save(qr_path)
             pdf.image(qr_path, x=160, y=10, w=30)
-            os.remove(qr_path)  # remove temporary QR file
+            os.remove(qr_path)
 
-        # Convert PDF to BytesIO
         pdf_bytes = pdf.output(dest='S').encode('latin-1')
         pdf_io = BytesIO(pdf_bytes)
         pdf_io.seek(0)
@@ -251,12 +236,10 @@ def download_ticket(ticket_id):
     except Exception as e:
         return f"⚠️ Error generating PDF: {str(e)}"
 
-# ---------------- Admin (All Events) ----------------
 @app.route("/admin")
 def admin():
     all_registrations = list(registrations.find())
     return render_template("admin.html", registrations=all_registrations)
 
-# ---------------- Run Flask ----------------
-if __name__ == "__main__":
-    app.run(debug=True)
+# ✅ IMPORTANT for Vercel: Do NOT include app.run()
+# Just expose `app`

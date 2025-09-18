@@ -1,7 +1,7 @@
-Flask
-pymongo
-flask-mail
-werkzeug
-fpdf
-qrcode
-Pillow
+Flask==3.0.3
+pymongo==4.8.0
+Flask-Mail==0.9.1
+Werkzeug==3.0.3
+fpdf==1.7.2
+qrcode==7.4.2
+Pillow==10.4.0
