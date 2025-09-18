@@ -1,262 +1,90 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from flask_mail import Mail, Message
-from bson import ObjectId
-from werkzeug.security import generate_password_hash, check_password_hash
 from fpdf import FPDF
-from io import BytesIO
 import qrcode
+from io import BytesIO
+from PIL import Image
+import base64
 import os
 
+# ---------------- Flask App ----------------
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"
 
 # ---------------- MongoDB Setup ----------------
-client = MongoClient(
-    "mongodb+srv://shahnawazimam53_db_user:Imam1234@cluster0.ccc3bdn.mongodb.net/?retryWrites=true&w=majority"
-)
+# Change "event_registration_db" & "registrations" if needed
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
 db = client["event_registration_db"]
-users_collection = db["users"]
 registrations = db["registrations"]
 
-# ---------------- SMTP Email Setup ----------------
+# ---------------- Flask-Mail Setup ----------------
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = "shahbazimam0111@gmail.com"
-app.config["MAIL_PASSWORD"] = "igtpbkwrjovssigs"  # App password
-app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
+app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")   # your Gmail
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")   # app password
 mail = Mail(app)
 
-# ---------------- Routes ----------------
-@app.route("/")
+# ---------------- Home ----------------
+@app.route("/", methods=["GET"])
 def home():
-    return render_template("index.html")
+    return jsonify({"message": "Event Registration API is Live on Vercel ✅"})
 
-# ---------------- User Signup ----------------
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        age = request.form["age"]
-        password = request.form["password"]
-
-        if users_collection.find_one({"email": email}):
-            return render_template("signup.html", success=False, message="Email already registered!")
-
-        hashed_password = generate_password_hash(password)
-        users_collection.insert_one({
-            "name": name,
-            "email": email,
-            "age": age,
-            "password": hashed_password
-        })
-
-        flash("✅ Account created successfully! Please login.", "success")
-        return redirect(url_for("login"))
-
-    return render_template("signup.html")
-
-# ---------------- User Login ----------------
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-
-        user = users_collection.find_one({"email": email})
-        if user and check_password_hash(user["password"], password):
-            session["user_id"] = str(user["_id"])
-            session["user_name"] = user["name"]
-            session["user_email"] = user["email"]
-            return redirect(url_for("dashboard"))
-        else:
-            return render_template("login.html", success=False, message="❌ Invalid email or password!")
-
-    return render_template("login.html")
-
-# ---------------- Dashboard ----------------
-@app.route("/dashboard")
-def dashboard():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    return render_template("dashboard.html", user_name=session["user_name"])
-
-# ---------------- Logout ----------------
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("✅ You have been logged out.", "info")
-    return redirect(url_for("login"))
-
-# ---------------- Event Registration ----------------
-@app.route("/register", methods=["GET", "POST"])
-def register_event():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if request.method == "POST":
-        data = {
-            "event_name": request.form["event_name"],
-            "user_name": request.form["user_name"],
-            "organizers": request.form["organizers"],
-            "event_type": request.form.get("event_type", "General"),
-            "email": request.form["email"],
-            "event_date": request.form["event_date"],
-            "event_time": request.form["event_time"],
-            "participants": int(request.form["participants"]),
-            "event_address": request.form["event_address"],
-            "ticket_price": request.form["ticket_price"],
-            "user_email": session["user_email"]
-        }
-
-        try:
-            result = registrations.insert_one(data)
-            event_id = str(result.inserted_id)
-
-            # Email Confirmation
-            try:
-                msg = Message(
-                    subject=f"Registration Successful for {data['event_name']}",
-                    recipients=[data['email']]
-                )
-                msg.body = f"""
-Hello {data['user_name']},
-
-Your registration for the event "{data['event_name']}" is successful.
-
-Event Details:
-Organizers: {data['organizers']}
-Type: {data['event_type']}
-Date & Time: {data['event_date']} at {data['event_time']}
-Participants: {data['participants']}
-Address: {data['event_address']}
-Ticket Price: ₹{data['ticket_price']}
-
-You can view and download your tickets here: http://127.0.0.1:5000/ticket/{event_id}
-
-Thank you for registering!
-"""
-                mail.send(msg)
-            except Exception as e:
-                print(f"⚠️ Email failed to send: {str(e)}")
-
-            return render_template("success.html", event_id=event_id)
-
-        except Exception as e:
-            return render_template("registration.html", success=False, message=f"❌ Registration Failed: {str(e)}")
-
-    return render_template("registration.html")
-
-# ---------------- User's Events ----------------
-@app.route("/my_events")
-def my_events():
-    if "user_email" not in session:
-        return redirect(url_for("login"))
-
-    user_events = list(registrations.find({"user_email": session["user_email"]}))
-    return render_template("my_events.html", events=user_events)
-
-# ---------------- Ticket Generation ----------------
-@app.route("/ticket/<ticket_id>")
-def ticket(ticket_id):
+# ---------------- Register Endpoint ----------------
+@app.route("/register", methods=["POST"])
+def register():
     try:
-        event = registrations.find_one({"_id": ObjectId(ticket_id)})
-        if not event:
-            return "❌ Ticket not found!"
+        data = request.json
+        name = data.get("name")
+        email = data.get("email")
+        event = data.get("event")
 
-        tickets = []
-        for i in range(1, int(event["participants"]) + 1):
-            tickets.append({
-                "ticket_number": f"{ticket_id}-{i:03d}",
-                "event": event["event_name"],
-                "organizers": event["organizers"],
-                "event_type": event.get("event_type", "General"),
-                "date": event["event_date"],
-                "time": event["event_time"],
-                "address": event["event_address"],
-                "price": event["ticket_price"],
-                "participant_no": i
-            })
+        if not (name and email and event):
+            return jsonify({"error": "Missing fields"}), 400
 
-        return render_template("ticket.html", event=event, tickets=tickets)
+        # Save to MongoDB
+        reg_data = {"name": name, "email": email, "event": event}
+        registrations.insert_one(reg_data)
+
+        # Generate QR code
+        qr_img = qrcode.make(f"{name} - {event}")
+        buf = BytesIO()
+        qr_img.save(buf, format="PNG")
+        qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+        # Generate Ticket (PDF)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=16)
+        pdf.cell(200, 10, txt="Event Ticket", ln=True, align="C")
+        pdf.ln(10)
+        pdf.set_font("Arial", size=12)
+        pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
+        pdf.cell(200, 10, txt=f"Event: {event}", ln=True)
+
+        # Save QR to temp and add to PDF
+        qr_path = "/tmp/qr.png"
+        qr_img.save(qr_path)
+        pdf.image(qr_path, x=80, y=60, w=50, h=50)
+
+        pdf_path = "/tmp/ticket.pdf"
+        pdf.output(pdf_path)
+
+        # Send Email with Ticket
+        msg = Message("Your Event Ticket", sender=app.config["MAIL_USERNAME"], recipients=[email])
+        msg.body = f"Hello {name},\n\nThank you for registering for {event}!"
+        with open(pdf_path, "rb") as f:
+            msg.attach("ticket.pdf", "application/pdf", f.read())
+        mail.send(msg)
+
+        return jsonify({"message": "Registration successful", "qr_code": qr_b64})
 
     except Exception as e:
-        return f"⚠️ Error loading ticket: {str(e)}"
+        return jsonify({"error": str(e)}), 500
 
-# ---------------- Download Tickets as PDF with QR ----------------
-@app.route("/download_ticket/<ticket_id>")
-def download_ticket(ticket_id):
-    try:
-        event = registrations.find_one({"_id": ObjectId(ticket_id)})
-        if not event:
-            return "❌ Ticket not found!"
 
-        tickets = []
-        for i in range(1, int(event["participants"]) + 1):
-            tickets.append({
-                "ticket_number": f"{ticket_id}-{i:03d}",
-                "event": event["event_name"],
-                "organizers": event["organizers"],
-                "event_type": event.get("event_type", "General"),
-                "date": event["event_date"],
-                "time": event["event_time"],
-                "address": event["event_address"],
-                "price": event["ticket_price"],
-                "participant_no": i
-            })
-
-        # Create PDF
-        pdf = FPDF('P', 'mm', 'A4')
-        pdf.set_auto_page_break(auto=True, margin=15)
-        font_path = os.path.join(os.path.dirname(__file__), "dejavu-sans", "DejaVuSans.ttf")
-        pdf.add_font("DejaVu", "", font_path, uni=True)
-        pdf.set_font("DejaVu", "", 14)
-
-        for t in tickets:
-            pdf.add_page()
-            pdf.cell(0, 10, f"Ticket Number: {t['ticket_number']}", ln=True)
-            pdf.cell(0, 10, f"Event: {t['event']}", ln=True)
-            pdf.cell(0, 10, f"Organizers: {t['organizers']}", ln=True)
-            pdf.cell(0, 10, f"Type: {t['event_type']}", ln=True)
-            pdf.cell(0, 10, f"Date: {t['date']}", ln=True)
-            pdf.cell(0, 10, f"Time: {t['time']}", ln=True)
-            pdf.cell(0, 10, f"Address: {t['address']}", ln=True)
-            pdf.cell(0, 10, f"Price: ₹{t['price']}", ln=True)
-            pdf.cell(0, 10, f"Participant No: {t['participant_no']}", ln=True)
-
-            # Add QR code
-            qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data(f"{t['ticket_number']} | {t['event']} | {t['participant_no']}")
-            qr.make(fit=True)
-            qr_img = qr.make_image(fill_color="black", back_color="white")
-            qr_path = os.path.join(os.path.dirname(__file__), f"{t['ticket_number']}.png")
-            qr_img.save(qr_path)
-            pdf.image(qr_path, x=160, y=10, w=30)
-            os.remove(qr_path)  # remove temporary QR file
-
-        # Convert PDF to BytesIO
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        pdf_io = BytesIO(pdf_bytes)
-        pdf_io.seek(0)
-
-        return send_file(
-            pdf_io,
-            as_attachment=True,
-            download_name=f"tickets_{ticket_id}.pdf",
-            mimetype="application/pdf"
-        )
-
-    except Exception as e:
-        return f"⚠️ Error generating PDF: {str(e)}"
-
-# ---------------- Admin (All Events) ----------------0
-@app.route("/admin")
-def admin():
-    all_registrations = list(registrations.find())
-    return render_template("admin.html", registrations=all_registrations)
-
-# ---------------- Run Flask ----------------
+# ---------------- Vercel Entry ----------------
+# Vercel looks for `app`
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
